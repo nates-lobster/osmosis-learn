@@ -12,6 +12,8 @@ A local-first adaptive MCQ practice app. Open `index.html` in a modern browser; 
 
 ## Question bank format
 
+For a ready-to-copy prompt to generate batches of 25 (four per chapter for 100 total), see [`QUESTION_AUTHORING.md`](QUESTION_AUTHORING.md). You can also use **Settings → Download format** in the app to download a JSON schema example.
+
 An import can be a JSON array, or an object with a `questions` array. `answer` is a zero-based index into `options`. Variants use the same fields and are alternate phrasings of the same underlying idea.
 
 ```json
