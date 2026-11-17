@@ -1,0 +1,4 @@
+# Local question banks and study history
+/user_data/
+__pycache__/
+*.py[cod]
