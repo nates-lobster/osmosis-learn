@@ -51,7 +51,7 @@ export function drawQuestionMap(state, strength, esc) {
   const edgeSet = new Set();
   const edges = [];
   const addEdge = (a, b, opacity) => {
-    if (a === b) return;
+    if (a === b || !positions[a]?.q.seen || !positions[b]?.q.seen) return;
     const lo = Math.min(a, b), hi = Math.max(a, b), key = `${lo}:${hi}`;
     if (edgeSet.has(key)) return;
     edgeSet.add(key);
@@ -76,10 +76,11 @@ export function drawQuestionMap(state, strength, esc) {
   }
 
   const nodes = positions.map((p, i) => {
-    const s = strength(p.q), radius = 5 + s * 5;
-    return `<g class="node" data-node="${i}" tabindex="0" role="button" aria-label="${esc(p.topic)} question"><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius + 3}" fill="${p.color}" opacity="${.12 + s * .18}"/><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius}" fill="${p.color}" opacity="${.48 + s * .52}" stroke="white" stroke-width="1.5"/></g>`;
+    const s = strength(p.q), exposed = p.q.seen > 0, radius = exposed ? .9 + s * 1.5 : .65;
+    const fill = exposed ? p.color : '#10151a', opacity = exposed ? .28 + s * .72 : .62;
+    return `<g class="node ${exposed ? 'exposed-star' : 'unseen-star'}" data-node="${i}" tabindex="0" role="button" aria-label="${esc(p.topic)} ${exposed ? 'exposed' : 'not yet exposed'} question"><circle class="star-hit" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="transparent"/><circle class="star-pixel" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius.toFixed(2)}" fill="${fill}" opacity="${opacity.toFixed(2)}" ${exposed && s > .38 ? 'filter="url(#star-glow)"' : ''}/></g>`;
   }).join('');
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question knowledge map">${edges.join('')}${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question knowledge map"><defs><filter id="star-glow" x="-300%" y="-300%" width="700%" height="700%"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="${width}" height="${height}" fill="#05070a"/>${edges.join('')}${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
 
   const legend = document.querySelector('#graph-legend');
   const seen = new Set();
