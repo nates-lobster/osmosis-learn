@@ -1,3 +1,7 @@
+let mapSvg=null, mapView={x:0,y:0,width:760,height:420}, drag=null;
+function applyView(){if(mapSvg)mapSvg.setAttribute('viewBox',`${mapView.x} ${mapView.y} ${mapView.width} ${mapView.height}`)}
+export function zoomQuestionMap(factor){if(!mapSvg)return;const nextWidth=Math.max(90,Math.min(760,mapView.width*factor)),nextHeight=nextWidth*420/760,dx=(mapView.width-nextWidth)/2,dy=(mapView.height-nextHeight)/2;mapView={x:mapView.x+dx,y:mapView.y+dy,width:nextWidth,height:nextHeight};applyView()}
+export function resetQuestionMap(){mapView={x:0,y:0,width:760,height:420};applyView()}
 export function drawQuestionMap(state, strength, esc) {
   const host = document.querySelector('#question-map');
   if (!host) return;
@@ -35,10 +39,14 @@ export function drawQuestionMap(state, strength, esc) {
       const color = `hsl(${(chapterIndex.get(chapter) * 47 + ti * 31) % 360} 38% 43%)`;
       const ids = [];
       group.forEach((q, i) => {
-        const angle = 2 * Math.PI * i / Math.max(group.length, 1) + i * 0.07;
-        const ring = group.length > 1 ? 9 + Math.floor(i / 18) * 6 : 0;
+        // Stable pseudo-random placement makes a loose galactic cloud. Better
+        // recall exerts more attraction toward the topic's center; weak/unseen
+        // ideas remain farther out and more dispersed.
+        const seedText=String(q.id||`${chapter}-${topic}-${i}`);let seed=0;for(const ch of seedText)seed=(seed*31+ch.charCodeAt(0))>>>0;
+        const rand=offset=>{const x=Math.sin(seed+offset*127.1)*43758.5453;return x-Math.floor(x)};
+        const angle=rand(1)*Math.PI*2,recall=q.seen?strength(q):0.03,spread=12+(1-recall)*58,distance=3+Math.sqrt(rand(2))*spread;
         const id = positions.length;
-        positions.push({ x: topicCenter.x + Math.cos(angle) * ring, y: topicCenter.y + Math.sin(angle) * ring, q, color, topic, chapter, key });
+        positions.push({ x: topicCenter.x + Math.cos(angle)*distance, y: topicCenter.y + Math.sin(angle)*distance*.68, q, color, topic, chapter, key });
         positionByQuestion.set(q, id);
         ids.push(id);
       });
@@ -76,11 +84,17 @@ export function drawQuestionMap(state, strength, esc) {
   }
 
   const nodes = positions.map((p, i) => {
-    const s = strength(p.q), exposed = p.q.seen > 0, radius = exposed ? .9 + s * 1.5 : .65;
-    const fill = exposed ? p.color : '#10151a', opacity = exposed ? .28 + s * .72 : .62;
-    return `<g class="node ${exposed ? 'exposed-star' : 'unseen-star'}" data-node="${i}" tabindex="0" role="button" aria-label="${esc(p.topic)} ${exposed ? 'exposed' : 'not yet exposed'} question"><circle class="star-hit" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="transparent"/><circle class="star-pixel" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius.toFixed(2)}" fill="${fill}" opacity="${opacity.toFixed(2)}" ${exposed && s > .38 ? 'filter="url(#star-glow)"' : ''}/></g>`;
+    const s = strength(p.q), exposed = p.q.seen > 0, radius = exposed ? .55 + s * 1.2 : .38;
+    const fill = exposed ? p.color : '#161a20', opacity = exposed ? .25 + s * .75 : .22;
+    const glow = exposed ? `filter="drop-shadow(0 0 ${1+s*9}px ${p.color})"` : '';
+    return `<g class="node ${exposed ? 'exposed-star' : 'unseen-star'}" data-node="${i}" tabindex="0" role="button" aria-label="${esc(p.topic)} ${exposed ? 'exposed' : 'not yet exposed'} question"><circle class="star-hit" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="transparent"/><circle class="star-pixel" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius.toFixed(2)}" fill="${fill}" opacity="${opacity.toFixed(2)}" ${glow}/></g>`;
   }).join('');
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question knowledge map"><defs><filter id="star-glow" x="-300%" y="-300%" width="700%" height="700%"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="${width}" height="${height}" fill="#05070a"/>${edges.join('')}${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question galaxy. Scroll to zoom, drag to pan."><rect width="${width}" height="${height}" fill="#030509"/>${edges.join('')}${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
+  mapSvg=host.querySelector('svg');applyView();
+  mapSvg.onwheel=event=>{event.preventDefault();const box=mapSvg.getBoundingClientRect(),px=(event.clientX-box.left)/box.width,py=(event.clientY-box.top)/box.height,factor=event.deltaY<0?.82:1.22,nextW=Math.max(90,Math.min(760,mapView.width*factor)),nextH=nextW*420/760;mapView={x:mapView.x+(mapView.width-nextW)*px,y:mapView.y+(mapView.height-nextH)*py,width:nextW,height:nextH};applyView()};
+  mapSvg.onpointerdown=event=>{if(event.target.closest('.node'))return;drag={x:event.clientX,y:event.clientY,viewX:mapView.x,viewY:mapView.y};mapSvg.setPointerCapture?.(event.pointerId);mapSvg.style.cursor='grabbing'};
+  mapSvg.onpointermove=event=>{if(!drag)return;const box=mapSvg.getBoundingClientRect();mapView.x=drag.viewX-(event.clientX-drag.x)*mapView.width/box.width;mapView.y=drag.viewY-(event.clientY-drag.y)*mapView.height/box.height;applyView()};
+  mapSvg.onpointerup=mapSvg.onpointercancel=()=>{drag=null;if(mapSvg)mapSvg.style.cursor='grab'};mapSvg.style.cursor='grab';
 
   const legend = document.querySelector('#graph-legend');
   const seen = new Set();
