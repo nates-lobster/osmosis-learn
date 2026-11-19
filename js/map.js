@@ -54,42 +54,13 @@ export function drawQuestionMap(state, strength, esc) {
     });
   }
 
-  // Keep the mesh legible even for large textbook banks: connect nearby ideas
-  // sparsely rather than drawing every possible pair in a dense cluster.
-  const edgeSet = new Set();
-  const edges = [];
-  const addEdge = (a, b, opacity) => {
-    if (a === b || !positions[a]?.q.seen || !positions[b]?.q.seen) return;
-    const lo = Math.min(a, b), hi = Math.max(a, b), key = `${lo}:${hi}`;
-    if (edgeSet.has(key)) return;
-    edgeSet.add(key);
-    const p = positions[lo], q = positions[hi];
-    edges.push(`<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${q.x.toFixed(1)}" y2="${q.y.toFixed(1)}" stroke="${p.color}" stroke-opacity="${opacity}" stroke-width="1"/>`);
-  };
-  for (const ids of clusters.values()) {
-    for (let i = 0; i < ids.length; i++) {
-      if (i + 1 < ids.length) addEdge(ids[i], ids[i + 1], .2);
-      if (i + 3 < ids.length && i % 3 === 0) addEdge(ids[i], ids[i + 3], .12);
-    }
-  }
-  const keywordGroups = new Map();
-  questions.forEach(q => (q.keywords || []).forEach(word => {
-    const keyword = String(word).toLowerCase();
-    if (/^(ch\d+|lo\d+)$/.test(keyword)) return;
-    if (!keywordGroups.has(keyword)) keywordGroups.set(keyword, []);
-    keywordGroups.get(keyword).push(positionByQuestion.get(q));
-  }));
-  for (const ids of keywordGroups.values()) {
-    for (let i = 0; i + 1 < ids.length; i++) addEdge(ids[i], ids[i + 1], .1);
-  }
-
   const nodes = positions.map((p, i) => {
     const s = strength(p.q), exposed = p.q.seen > 0, radius = exposed ? .55 + s * 1.2 : .38;
     const fill = exposed ? p.color : '#161a20', opacity = exposed ? .25 + s * .75 : .22;
     const glow = exposed ? `filter="drop-shadow(0 0 ${1+s*9}px ${p.color})"` : '';
     return `<g class="node ${exposed ? 'exposed-star' : 'unseen-star'}" data-node="${i}" tabindex="0" role="button" aria-label="${esc(p.topic)} ${exposed ? 'exposed' : 'not yet exposed'} question"><circle class="star-hit" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="transparent"/><circle class="star-pixel" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${radius.toFixed(2)}" fill="${fill}" opacity="${opacity.toFixed(2)}" ${glow}/></g>`;
   }).join('');
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question galaxy. Scroll to zoom, drag to pan."><rect width="${width}" height="${height}" fill="#030509"/>${edges.join('')}${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Question galaxy. Scroll to zoom, drag to pan."><rect width="${width}" height="${height}" fill="#030509"/>${nodes}</svg><div class="graph-tooltip hidden" id="graph-tooltip"></div>`;
   mapSvg=host.querySelector('svg');applyView();
   mapSvg.onwheel=event=>{event.preventDefault();const box=mapSvg.getBoundingClientRect(),px=(event.clientX-box.left)/box.width,py=(event.clientY-box.top)/box.height,factor=event.deltaY<0?.82:1.22,nextW=Math.max(90,Math.min(760,mapView.width*factor)),nextH=nextW*420/760;mapView={x:mapView.x+(mapView.width-nextW)*px,y:mapView.y+(mapView.height-nextH)*py,width:nextW,height:nextH};applyView()};
   mapSvg.onpointerdown=event=>{if(event.target.closest('.node'))return;drag={x:event.clientX,y:event.clientY,viewX:mapView.x,viewY:mapView.y};mapSvg.setPointerCapture?.(event.pointerId);mapSvg.style.cursor='grabbing'};
