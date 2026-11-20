@@ -5,6 +5,8 @@ from pathlib import Path
 import json
 import os
 from threading import Lock
+from urllib.parse import urlparse, parse_qs
+import re
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "user_data"
@@ -12,15 +14,26 @@ STATE_FILE = DATA_DIR / "osmosis-state.json"
 MAX_BODY = 20 * 1024 * 1024
 SAVE_LOCK = Lock()
 
+def state_file_for(profile_id):
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", profile_id):
+        return None
+    return STATE_FILE if profile_id == "default" else DATA_DIR / f"osmosis-state-{profile_id}.json"
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def do_GET(self):
-        if self.path == "/api/state":
-            if STATE_FILE.exists():
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/state":
+            profile_id = parse_qs(parsed.query).get("profile", ["default"])[0]
+            state_file = state_file_for(profile_id)
+            if state_file is None:
+                self.send_error(400, "Invalid workspace id")
+                return
+            if state_file.exists():
                 try:
-                    payload = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+                    payload = json.loads(state_file.read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
                     self.send_error(500, "Could not read local learning data")
                     return
@@ -36,9 +49,34 @@ class Handler(SimpleHTTPRequestHandler):
             return
         return super().do_GET()
 
-    def do_PUT(self):
-        if self.path != "/api/state":
+    def do_DELETE(self):
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/state":
             self.send_error(404)
+            return
+        profile_id = parse_qs(parsed.query).get("profile", ["default"])[0]
+        state_file = state_file_for(profile_id)
+        if state_file is None or profile_id == "default":
+            self.send_error(400, "Invalid workspace id")
+            return
+        try:
+            with SAVE_LOCK:
+                state_file.unlink(missing_ok=True)
+            self.send_response(204)
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+        except OSError:
+            self.send_error(500, "Could not delete workspace data")
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/state":
+            self.send_error(404)
+            return
+        profile_id = parse_qs(parsed.query).get("profile", ["default"])[0]
+        state_file = state_file_for(profile_id)
+        if state_file is None:
+            self.send_error(400, "Invalid workspace id")
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -51,9 +89,9 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             DATA_DIR.mkdir(parents=True, exist_ok=True)
             with SAVE_LOCK:
-                temp = STATE_FILE.with_suffix(".tmp")
+                temp = state_file.with_suffix(".tmp")
                 temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-                temp.replace(STATE_FILE)
+                temp.replace(state_file)
         except (ValueError, OSError, json.JSONDecodeError):
             self.send_error(400, "Could not save local learning data")
             return
