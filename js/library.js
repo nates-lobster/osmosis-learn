@@ -13,7 +13,7 @@ export function renderQuestionGroups(container, questions, strength, esc, query 
     const matches = term ? items.filter(q => [q.id, q.chapter, q.topic, q.question, q.explanation, ...(q.options || []), ...(q.keywords || [])].join(' ').toLowerCase().includes(term)) : items;
     if (term && !matches.length) continue;
     const list = matches.map(q => {
-      const value = strength(q), mastered = q.seen > 0 && value >= .72;
+      const mastered = q.mastered === true;
       const status = mastered ? 'Mastered' : q.seen ? 'Revisit' : 'New';
       return `<article class="question-entry"><p>${esc(q.question)}</p><div class="question-entry-meta"><span>${esc(q.id)}</span><span>${esc(q.chapter)}</span><span class="tag ${mastered ? '' : q.seen ? 'warm' : ''}">${status}</span>${(q.variants || []).length ? `<span>${q.variants.length} variant${q.variants.length === 1 ? '' : 's'}</span>` : ''}</div></article>`;
     }).join('');

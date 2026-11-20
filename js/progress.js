@@ -4,14 +4,14 @@ export function createSnapshot(state, strength) {
     const current = strength(q), key = q.topic || 'General';
     if (!topicMap.has(key)) topicMap.set(key, []);
     topicMap.get(key).push(q);
-    return { id:q.id, chapter:q.chapter, topic:key, seen:q.seen||0, score:q.score||0, strength:current, avgTime:q.avgTime||0, lastSeen:q.lastSeen||0 };
+    return { id:q.id, chapter:q.chapter, topic:key, seen:q.seen||0, score:q.score||0, strength:current, avgTime:q.avgTime||0, lastSeen:q.lastSeen||0, mastered:q.mastered===true, everCorrect:q.everCorrect===true, masteryAttempts:q.masteryAttempts||0, masteryCorrect:q.masteryCorrect||0 };
   });
   const topicStats = [...topicMap].map(([topic, items]) => {
     const exposed = items.filter(q => q.seen > 0).length;
-    const mastered = items.filter(q => q.seen > 0 && strength(q) >= .72).length;
+    const mastered = items.filter(q => q.mastered === true).length;
     return { topic, total:items.length, exposed, mastered, exposurePct:Math.round(exposed/items.length*100), masteryPct:Math.round(mastered/items.length*100) };
   });
-  return { id:`snapshot-${Date.now()}`, createdAt:new Date().toISOString(), total:questions.length, exposed:questions.filter(q=>q.seen>0).length, mastered:questions.filter(q=>q.seen>0&&q.strength>=.72).length, questions, topics:topicStats };
+  return { id:`snapshot-${Date.now()}`, createdAt:new Date().toISOString(), total:questions.length, exposed:questions.filter(q=>q.seen>0).length, mastered:questions.filter(q=>q.mastered).length, questions, topics:topicStats };
 }
 
 export function renderSnapshots(container, snapshots, esc) {

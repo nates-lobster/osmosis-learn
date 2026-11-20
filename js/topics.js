@@ -7,7 +7,7 @@ export function renderTopicCards(container, groups, strength, esc, query = '') {
   });
   container.innerHTML = entries.map(([topic, items]) => {
     const exposed = items.filter(q => q.seen > 0).length;
-    const mastered = items.filter(q => q.seen > 0 && strength(q) >= .72).length;
+    const mastered = items.filter(q => q.mastered === true).length;
     const exposedPct = Math.round(exposed / items.length * 100);
     const masteredPct = Math.round(mastered / items.length * 100);
     return `<button class="topic" type="button" data-topic="${esc(topic)}" title="${exposedPct}% exposed · ${masteredPct}% mastered">
