@@ -10,11 +10,12 @@ export function renderTopicCards(container, groups, strength, esc, query = '') {
     const mastered = items.filter(q => q.mastered === true).length;
     const exposedPct = Math.round(exposed / items.length * 100);
     const masteredPct = Math.round(mastered / items.length * 100);
+    const masteryTone = masteredPct < 35 ? 'low' : masteredPct < 70 ? 'mid' : 'high';
     const chapter = items[0]?.chapter || 'Unsorted';
     return `<button class="topic topic-row" type="button" data-topic="${esc(topic)}" data-chapter="${esc(chapter)}" title="${exposedPct}% exposed · ${masteredPct}% mastered">
       <span class="topic-row-icon" aria-hidden="true">◉</span>
       <span class="topic-row-main"><strong>${esc(topic)}</strong><small>${items.length} questions · ${exposed} exposed · ${mastered} mastered</small>
-        <span class="topic-row-progress" role="img" aria-label="${exposedPct}% exposed, ${masteredPct}% mastered"><i class="exposure" style="width:${exposedPct}%"></i><i class="mastery" style="width:${masteredPct}%"></i></span>
+        <span class="topic-row-progress" role="img" aria-label="${exposedPct}% exposed, ${masteredPct}% mastered"><i class="exposure" style="width:${exposedPct}%"></i><i class="mastery ${masteryTone}" style="width:${masteredPct}%"></i></span>
       </span><span class="topic-row-pct">${masteredPct}%</span>
     </button>`;
   }).join('');
