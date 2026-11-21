@@ -11,11 +11,11 @@ export function renderTopicCards(container, groups, strength, esc, query = '') {
     const exposedPct = Math.round(exposed / items.length * 100);
     const masteredPct = Math.round(mastered / items.length * 100);
     const chapter = items[0]?.chapter || 'Unsorted';
-    return `<button class="topic" type="button" data-topic="${esc(topic)}" data-chapter="${esc(chapter)}" title="${exposedPct}% exposed · ${masteredPct}% mastered">
-      <div class="topic-top"><div class="topic-icon">◉</div><span class="pct">${masteredPct}% mastered</span></div>
-      <h3>${esc(topic)}</h3><small>${items.length} questions · ${exposed} exposed · ${mastered} mastered</small>
-      <div class="topic-metrics"><span>Exposed <b>${exposedPct}%</b></span><span>Mastered <b>${masteredPct}%</b></span></div>
-      <div class="dual-progress" role="img" aria-label="${exposedPct}% exposed, ${masteredPct}% mastered"><i class="exposure" style="width:${exposedPct}%"></i><i class="mastery" style="width:${masteredPct}%"></i></div>
+    return `<button class="topic topic-row" type="button" data-topic="${esc(topic)}" data-chapter="${esc(chapter)}" title="${exposedPct}% exposed · ${masteredPct}% mastered">
+      <span class="topic-row-icon" aria-hidden="true">◉</span>
+      <span class="topic-row-main"><strong>${esc(topic)}</strong><small>${items.length} questions · ${exposed} exposed · ${mastered} mastered</small>
+        <span class="topic-row-progress" role="img" aria-label="${masteredPct}% mastered"><i style="width:${masteredPct}%"></i></span>
+      </span><span class="topic-row-pct">${masteredPct}%</span>
     </button>`;
   }).join('');
 }
