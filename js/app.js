@@ -45,7 +45,7 @@ function update(){
   const exposed=questions.filter(q=>q.seen>0).length,mastered=questions.filter(isMastered).length;
   const exposedPct=total?Math.round(exposed/total*100):0,masteredPct=total?Math.round(mastered/total*100):0;
   $('#due-count').textContent=questions.filter(q=>strength(q)<.65).length;$('#mastered-count').textContent=mastered;
-  $('#coverage-num').textContent=masteredPct+'%';const ring=$('#coverage-num').closest('.ring'),tone=masteredPct<35?'var(--user-wrong, #ff6161)':masteredPct<70?'var(--user-warning, #ffc533)':'var(--user-success, #59d499)';ring.style.setProperty('--mastery',masteredPct+'%');ring.style.setProperty('--mastery-color',tone);ring.style.setProperty('--exposure',exposedPct+'%');$('#bank-progress').style.width=masteredPct+'%';$('#progress-num').textContent=masteredPct+'%';$('#learning-num').textContent=Math.max(0,exposedPct-masteredPct)+'%';$('#unseen-num').textContent=(100-exposedPct)+'%';
+  $('#coverage-num').textContent=masteredPct+'%';const ring=$('#coverage-num').closest('.ring');ring.style.setProperty('--mastery',masteredPct+'%');ring.style.setProperty('--exposure',exposedPct+'%');$('#bank-progress').style.width=masteredPct+'%';$('#progress-num').textContent=masteredPct+'%';$('#learning-num').textContent=Math.max(0,exposedPct-masteredPct)+'%';$('#unseen-num').textContent=(100-exposedPct)+'%';
   const dashboardCards=$('#topic-cards'),mapCards=$('#map-cards');
   renderChapterTopicGroups(dashboardCards,questions,strength,esc,$('#dashboard-topic-search')?.value||'');
   renderChapterTopicGroups(mapCards,questions,strength,esc,$('#map-topic-search')?.value||'');
