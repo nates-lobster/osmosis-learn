@@ -40,8 +40,12 @@ export function renderChapterTopicGroups(container, questions, strength, esc, qu
       const haystack = [chapter, topic, ...items.flatMap(q => q.keywords || [])].join(' ').toLowerCase();
       return !term || haystack.includes(term);
     }));
-    if (matching.size) groups.push({ chapter, topics:matching });
+    if (matching.size) {
+      const allQuestions=[...topics.values()].flat(), exposed=allQuestions.filter(q=>q.seen>0).length, mastered=allQuestions.filter(q=>q.mastered===true).length;
+      const status=mastered===allQuestions.length?'mastered':exposed>0?'in-progress':'not-started';
+      groups.push({ chapter, topics:matching, status, total:allQuestions.length });
+    }
   }
-  container.innerHTML = groups.map((group, i) => `<details class="chapter-topic-group" data-chapter="${esc(group.chapter)}" ${term || previouslyOpen.has(group.chapter) ? 'open' : ''}><summary><span>${esc(group.chapter)}</span><span class="chapter-topic-count">${group.topics.size} topics · ${[...group.topics.values()].reduce((n, qs) => n + qs.length, 0)} questions</span></summary><div class="topics chapter-topic-cards" id="chapter-topic-${i}"></div></details>`).join('') || '<div class="empty">No topics match this filter.</div>';
+  container.innerHTML = groups.map((group, i) => `<details class="chapter-topic-group chapter-state-${group.status}" data-chapter="${esc(group.chapter)}" ${term || previouslyOpen.has(group.chapter) ? 'open' : ''}><summary><span class="chapter-name">${esc(group.chapter)}</span><span class="chapter-topic-count">${group.topics.size} topics · ${group.total} questions</span><span class="chapter-state-label">${group.status==='mastered'?'Mastered':group.status==='in-progress'?'In progress':'Not started'}</span></summary><div class="topics chapter-topic-cards" id="chapter-topic-${i}"></div></details>`).join('') || '<div class="empty">No topics match this filter.</div>';
   groups.forEach((group, i) => renderTopicCards(container.querySelector(`#chapter-topic-${i}`), Object.fromEntries(group.topics), strength, esc, query));
 }
