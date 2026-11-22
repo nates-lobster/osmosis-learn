@@ -79,7 +79,7 @@ export function renderSnapshots(container, snapshots, esc) {
   const weak = [...recurring.values()].filter(x=>x.count>1).sort((a,b)=>b.count-a.count).slice(0,6);
   const weakHtml = weak.length ? `<div class="snapshot-weak"><b>Repeated low-mastery areas:</b> ${weak.map(x=>`${esc(x.label)} (${x.count} checkpoints)`).join(' · ')}</div>` : '';
   const rows=[...snapshots].reverse().slice(0,20).map(s=>{
-    const run=s.session, quiz=run?esc(run.focus||'Quiz'):(s.kind==='legacy'?'Older checkpoint':'Manual checkpoint');
+    const run=s.session, quiz=run?esc(run.focus||'Quiz'):(s.kind==='legacy'?'Older checkpoint':s.kind==='recovery'?'Progress recovery':'Manual checkpoint');
     const accuracy=run?`${run.accuracy}%`:'—', duration=run?formatSnapshotDuration(run.durationMs):'—';
     const delta=s.masteredDelta===null||s.masteredDelta===undefined?'—':`${s.masteredDelta>0?'+':''}${s.masteredDelta}`;
     const changes=(s.topics||[]).filter(t=>t.deltaMastered||Math.abs(t.deltaStrength||0)>=.01).sort((x,y)=>Math.abs(y.deltaStrength||0)-Math.abs(x.deltaStrength||0)).slice(0,8);
